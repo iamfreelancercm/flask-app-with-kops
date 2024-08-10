@@ -1,4 +1,4 @@
------------------------------ Steps 
+- Steps 
 
 * create Kubernetes cluster creation config for kops which has multiple ig, mixed instance group and lifecycle (spot and ondemand)
 
