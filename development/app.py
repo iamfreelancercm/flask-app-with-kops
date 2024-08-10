@@ -9,7 +9,7 @@ import os
 app = Flask(__name__)
 
 # Configure AWS S3 bucket details
-S3_BUCKET = 'flask-waseem'
+S3_BUCKET = 'waseem-flask-s3'
 S3_KEY = os.getenv('S3_KEY')
 S3_SECRET = os.getenv('S3_SECRET')
 S3_REGION = 'us-east-1'

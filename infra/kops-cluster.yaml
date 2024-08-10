@@ -11,7 +11,7 @@ spec:
     rbac: {}
   channel: stable
   cloudProvider: aws
-  configBase: s3://flask-waseem/poc.k8s.local
+  configBase: s3://waseem-flask-s3/poc.k8s.local
   etcdClusters:
   - cpuRequest: 200m
     etcdMembers:
