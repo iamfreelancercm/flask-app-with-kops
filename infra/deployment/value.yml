@@ -1,0 +1,12 @@
+backend:
+  name: webapp
+  image: mirwasim0/assignment:latest
+  replicas: 1
+  service:
+    type: LoadBalancer
+    port: 80
+    targetport: 80
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 50
+    
