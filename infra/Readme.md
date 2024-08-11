@@ -45,6 +45,15 @@
     
             kops update cluster --name poc.k8s.local --yes
 
+ - setup instance auto sacling 
+    - After sucessfully running kops cluster neew to deploy autoscaling addon 
+    - command to deploy autoscaling addon
+       
+              kubectl apply -f cluster-autoscaler.yml
+
+    - official docs link of autoscaling addon 
+        - https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/aws/README.md
+
  - Create and push docker image to docker repo
     
         cd flask
