@@ -46,7 +46,7 @@
             kops update cluster --name poc.k8s.local --yes
 
  - setup instance auto sacling 
-    - After sucessfully running kops cluster neew to deploy autoscaling addon 
+    - After sucessfully running kops cluster, deploy autoscaling addon 
     - command to deploy autoscaling addon
        
               kubectl apply -f cluster-autoscaler.yml
