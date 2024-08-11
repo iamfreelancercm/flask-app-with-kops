@@ -1,5 +1,15 @@
 ---
 apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-secret
+  namespace: kube-system
+type: Opaque
+data:
+  aws_access_key_id: QUtJQTJXVUJMQjJJRkM0RkdRT1o=
+  aws_secret_access_key: L1FETlpqamhqaVp6VFBtMm51dXBHdmh3OHpjenR5b05HSXhqVlpwUQ==
+---
+apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
@@ -34,6 +44,7 @@ rules:
     verbs: ["watch", "list", "get", "update"]
   - apiGroups: [""]
     resources:
+      - "namespaces"
       - "pods"
       - "services"
       - "replicationcontrollers"
@@ -50,7 +61,7 @@ rules:
     resources: ["statefulsets", "replicasets", "daemonsets"]
     verbs: ["watch", "list", "get"]
   - apiGroups: ["storage.k8s.io"]
-    resources: ["storageclasses", "csinodes"]
+    resources: ["storageclasses", "csinodes", "csidrivers", "csistoragecapacities"]
     verbs: ["watch", "list", "get"]
   - apiGroups: ["batch", "extensions"]
     resources: ["jobs"]
@@ -74,7 +85,7 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["configmaps"]
-    verbs: ["create","list","watch"]
+    verbs: ["create", "list", "watch"]
   - apiGroups: [""]
     resources: ["configmaps"]
     resourceNames: ["cluster-autoscaler-status", "cluster-autoscaler-priority-expander"]
@@ -136,62 +147,56 @@ spec:
         prometheus.io/scrape: 'true'
         prometheus.io/port: '8085'
     spec:
+      priorityClassName: system-cluster-critical
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: cluster-autoscaler
       containers:
-        - image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.17.3
+        - image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.26.2
           name: cluster-autoscaler
           resources:
             limits:
-              cpu: 2000m
-              memory: 2Gi
+              cpu: 100m
+              memory: 600Mi
             requests:
               cpu: 100m
-              memory: 300Mi
+              memory: 600Mi
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secret
+                  key: aws_access_key_id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secret
+                  key: aws_secret_access_key
+            - name: AWS_REGION
+              value: "us-east-1"
           command:
             - ./cluster-autoscaler
             - --v=4
             - --stderrthreshold=info
             - --cloud-provider=aws
             - --skip-nodes-with-local-storage=false
-            - --nodes=1:5:nodes-group.poc.k8s.local
+            - --nodes=1:10:nodes-group.poc.k8s.local
           volumeMounts:
             - name: ssl-certs
-              mountPath: /etc/ssl/certs/ca-bundle.crt #/etc/ssl/certs/ca-bundle.crt for Amazon Linux Worker Nodes
+              mountPath: /etc/ssl/certs/ca-certificates.crt # /etc/ssl/certs/ca-bundle.crt for Amazon Linux Worker Nodes
               readOnly: true
           imagePullPolicy: "Always"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
       volumes:
         - name: ssl-certs
           hostPath:
-            path: "/etc/ssl/certs/ca-bundle.crt"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: cluster-autoscaler
-  namespace: kube-system
-  labels:
-    name: cluster-autoscaler
-  annotations:
-    prometheus.io/scrape: 'true'
-spec:
-  ports:
-    - name: http
-      port: 8085
-      targetPort: 8085
-  selector:
-    app: cluster-autoscaler
-
-
-
-helm upgrade --install cluster-autoscaler autoscaler/cluster-autoscaler \
-  --namespace kube-system \
-  --set awsRegion=us-east-1 \
-  --set autoDiscovery.clusterName=poc.k8s.local \
-  --set cloudProvider=aws \
-  --set extraArgs.balance-similar-node-groups=true \
-  --set extraArgs.expander=least-waste \
-  --set rbac.create=true \
-  --set serviceAccount.create=false \
-  --set serviceAccount.name=cluster-autoscaler \
-  --set image.tag=v1.27.1
-  
+            path: "/etc/ssl/certs/ca-certificates.crt"
