@@ -3,11 +3,11 @@ name: backend
 on:
     workflow_run:
       workflows: 
-        - "unittest"
+        - "UnitTest"
       types: 
         - completed
       branches: 
-        - anup
+        - main
 
 jobs:
   test:
